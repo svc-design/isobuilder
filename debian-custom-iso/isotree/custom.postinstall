@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -x
+
+export BASE=/target/
+
+sed -i -e 's/ext4    errors=remount-ro/ext4    errors=remount-ro,noatime/g' -e 's/ext4    defaults/ext4    defaults,noatime/g' ${BASE}/etc/fstab
+
+# 默认设置使用 DEEPIN CDN MIRROR
+cat  >> ${BASE}/etc/apt/sources.list << "EOF"
+deb http://cdn.packages.deepin.com/deepin-server/ kui main non-free contrib
+deb http://cdn.packages.deepin.com/deepin-server/ kui-security main non-free contrib
+deb-src http://cdn.packages.deepin.com/deepin-server/ kui main non-free contrib
+deb-src http://cdn.packages.deepin.com/deepin-server/ kui-security main non-free contrib
+EOF
+
+# add firewire-core kernel module into blacklist
+MODUTILSDIR=/target/etc/modprobe.d/
+echo "blacklist firewire-core" > ${MODUTILSDIR}/deepin-blacklist.conf
+echo "blacklist thunderbolt" >> ${MODUTILSDIR}/deepin-blacklist.conf
+echo "blacklist mga" >> ${MODUTILSDIR}/deepin-blacklist.conf
+echo "blacklist mgag200" >> ${MODUTILSDIR}/deepin-blacklist.conf
+
+# add Multiarch support
+echo "amd64" > /target/var/lib/dpkg/arch
+echo "i386" >> /target/var/lib/dpkg/arch
+
