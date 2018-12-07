@@ -1,8 +1,9 @@
 #!/bin/bash
-
+ 
 set -x
 
-export REPO=https://mirrors.tuna.tsinghua.edu.cn/debian/
+#export REPO=https://mirrors.tuna.tsinghua.edu.cn/debian/
+export REPO=file:////mnt/root/repo/
 export CHROOT=$HOME/chroot
 export PKG_CORE="locales,busybox,initramfs-tools,ssh,tar,iptables,linux-image-amd64,grub-efi,live-boot,vim"
 export PKG_DESKTOP="deepin-desktop-base,dde-desktop,dde-dock,dde-launcher,dde-control-center,deepin-metacity,deepin-wm,startdde,dde-session-ui,deepin-artwork,dde-file-manager,dde-qt5integration,dde-disk-mount-plugin,deepin-wallpapers,fonts-noto,fonts-noto-color-emoji,deepin-terminal,deepin-screenshot,deepin-system-monitor,deepin-shortcut-viewer,ttf-deepin-opensymbol,lightdm"
@@ -30,13 +31,17 @@ cat <<'EOF' >$HOME/chroot/tmp/set-passwd.sh
 echo "root:live" | chpasswd
 EOF
 
+cat <<'EOF' >$HOME/chroot/etc/apt/sources.list
+deb [trusted=yes by-hash=force] http://packages.deepin.com/deepin panda main contrib non-free
+EOF
+
 chmod 755 $HOME/chroot/tmp/set-passwd.sh
 chroot $CHROOT "/tmp/set-passwd.sh" 
 
 umount  $CHROOT/dev
 umount  $CHROOT/proc
 umount  $CHROOT/sys
-#rm -rvf $CHROOT/chroot/var/cache/apt/archives/
+rm -rvf $CHROOT/var/cache/apt/archives/
 
 
 mksquashfs $HOME/chroot $HOME/LIVE_BOOT/image/live/filesystem.squashfs 
