@@ -91,4 +91,4 @@ xorriso -as mkisofs \
     -no-emul-boot \
     -append_partition 2 0xef ${HOME}/LIVE_BOOT/scratch/efiboot.img \
     -graft-points "${HOME}/LIVE_BOOT/image" /EFI/efiboot.img=$HOME/LIVE_BOOT/scratch/efiboot.img \
-    -output "${HOME}/LIVE_BOOT/plasma-desktop-live.iso"
+    -output "${HOME}/LIVE_BOOT/deepin-desktop-live.iso"
