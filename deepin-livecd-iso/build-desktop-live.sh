@@ -6,7 +6,7 @@ export REPO_LOCAL=file:///mnt/root/repo
 export CHROOT=$HOME/chroot
 export PKG_CORE="locales,busybox,initramfs-tools,ssh,tar,iptables,linux-image-amd64,grub-efi,live-boot,vim"
 
-#rm -rvf $HOME/chroot/
+rm -rvf $HOME/chroot/
 rm -rvf $HOME/LIVE_BOOT/
 
 mkdir -p $HOME/chroot
