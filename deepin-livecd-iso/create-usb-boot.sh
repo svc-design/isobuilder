@@ -1,5 +1,5 @@
 
-export disk=/dev/sdb
+export disk=$1
 
 dd if=/dev/null of=$disk bs=4M count=10
 

@@ -32,16 +32,18 @@ cat <<'EOF' >$HOME/chroot/tmp/set-livecd.sh
 export DEBIAN_FRONTEND=noninteractive
 useradd live
 groupadd live
-mkdir /home/live && cp -av /etc/skel/.* /home/live && chown live:live /home/live/ 
+mkdir /home/live && chown live:live /home/live/ 
 echo "root:live" | chpasswd 
 echo "live:live" | chpasswd 
 apt update && apt -f install -y
+apt install network-manager -y
 apt install live-config lightdm -y
-apt-get remove linux-image-4.16.0-1-amd64 xterm --purge -y 
-apt install linux-image-deepin-amd64 linux-headers-4.15.0-29deepin firmware-misc-nonfree -y
-apt install xserver-xorg-core xserver-xorg-input-all xserver-xorg-video-all xserver-xorg-input-wacom xinit -y
-apt install --no-install-recommends dde deepin-installer deepin-terminal google-chrome-stable -y
+apt-get remove linux-image-4.16.0-1-amd64 --purge -y 
 apt install fcitx fcitx-frontend-qt5 fcitx-frontend-gtk3 sogoupinyin -y
+apt install --no-install-recommends dde deepin-installer deepin-terminal google-chrome-stable -y
+apt install xserver-xorg-core xserver-xorg-input-all xserver-xorg-video-all xserver-xorg-input-wacom xinit -y
+apt install linux-image-deepin-amd64 linux-headers-4.15.0-29deepin linux-source-4.15.0 firmware-misc-nonfree firmware-linux-free firmware-iwlwifi bluez-firmware -y
+apt-get remove xterm --purge -y 
 apt install kubeadm kubectl kubelet docker.io ansible teamviewer dingtalk touchpad-indicator deepin-screenshot wps-office thunderbird thunderbird-locale-zh-hans -y
 EOF
 chmod 755 $HOME/chroot/tmp/set-livecd.sh
@@ -51,7 +53,6 @@ rm -rvf $CHROOT/var/cache/apt/archives/
 umount  $CHROOT/dev
 umount  $CHROOT/proc
 umount  $CHROOT/sys
-
 
 mksquashfs $HOME/chroot $HOME/LIVE_BOOT/image/live/filesystem.squashfs -comp xz 
 cp $HOME/chroot/boot/vmlinuz-* $HOME/LIVE_BOOT/image/vmlinuz
@@ -89,4 +90,4 @@ xorriso -as mkisofs \
     -no-emul-boot \
     -append_partition 2 0xef ${HOME}/LIVE_BOOT/scratch/efiboot.img \
     -graft-points "${HOME}/LIVE_BOOT/image" /EFI/efiboot.img=$HOME/LIVE_BOOT/scratch/efiboot.img \
-    -output "${HOME}/LIVE_BOOT/deepin-desktop-live.iso"
+    -output "${HOME}/LIVE_BOOT/deepin-desktop-core-20181210.iso"
