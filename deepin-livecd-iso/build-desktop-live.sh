@@ -2,57 +2,80 @@
  
 set -x
 
-export REPO_LOCAL=file:///mnt/root/repo
+export REPO_LOCAL=file:///home/shenlan/workspaces/lion-repo-core/
+export REPO_NET=http://mirrors.ustc.edu.cn/debian/
+export DIST=stable
 export CHROOT=$HOME/chroot
-export PKG_CORE="locales,busybox,initramfs-tools,ssh,tar,iptables,linux-image-amd64,grub-efi,live-boot,vim"
+export PKG_CORE="locales,busybox,systemd,systemd-sysv,initramfs-tools,ssh,tar,iptables,linux-image-amd64,grub-efi,live-boot,vim,isc-dhcp-client,iproute2"
 
-rm -rvf $HOME/chroot/
-rm -rvf $HOME/LIVE_BOOT/
-
-mkdir -p $HOME/chroot
-mkdir -p $HOME/LIVE_BOOT/{scratch,image/live}
-apt install debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin mtools -y
+function do_prep()
+{
+    rm -rvf  $HOME/chroot/
+    rm -rvf  $HOME/LIVE_BOOT/
+    mkdir -p $HOME/chroot
+    mkdir -p $HOME/LIVE_BOOT/{scratch,image/live}
+#    apt install debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin mtools -y
+}
 
 #apt-get download `cat mini-base.list`
 
-debootstrap --no-check-gpg --variant=minbase --include=$PKG_CORE --components=main,non-free,contrib --arch=amd64 buster $CHROOT $REPO_LOCAL
+function do_first_stage()
+{
+
+ln -sv /usr/share/debootstrap/scripts/sid /usr/share/debootstrap/scripts/lion -f
+debootstrap --no-check-gpg --variant=minbase --include=$PKG_CORE --components=main,non-free,contrib --arch=amd64 $DIST $CHROOT $REPO_NET
 
 mount --bind /dev/   $CHROOT/dev
 mount -t proc proc   $CHROOT/proc
 mount -t sysfs sysfs $CHROOT/sys
 
-
-cat <<'EOF' >$HOME/chroot/etc/apt/sources.list
-deb [trusted=yes] http://127.0.0.1/repo/ panda main contrib non-free
-deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/deepin/ panda main contrib non-free
+cat <<'EOF' >${CHROOT}/etc/apt/sources.list
+deb [trusted=yes] http://mirrors.ustc.edu.cn/debian/ stable main contrib non-free
+deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/deepin/ lion main contrib non-free
 EOF
 
-cat <<'EOF' >$HOME/chroot/tmp/set-livecd.sh
+cat <<'EOF' >${CHROOT}/tmp/set-livecd.sh
 #!/bin/bash
-export DEBIAN_FRONTEND=noninteractive
 useradd live
 groupadd live
 mkdir /home/live && chown live:live /home/live/ 
 echo "root:live" | chpasswd 
 echo "live:live" | chpasswd 
-apt update && apt -f install -y
-apt install network-manager -y
-apt install live-config lightdm -y
-apt-get remove linux-image-4.16.0-1-amd64 --purge -y 
-apt install fcitx fcitx-frontend-qt5 fcitx-frontend-gtk3 sogoupinyin -y
-apt install --no-install-recommends dde deepin-installer deepin-terminal google-chrome-stable -y
-apt install xserver-xorg-core xserver-xorg-input-all xserver-xorg-video-all xserver-xorg-input-wacom xinit -y
-apt install linux-image-deepin-amd64 linux-headers-4.15.0-29deepin linux-source-4.15.0 firmware-misc-nonfree firmware-linux-free firmware-iwlwifi bluez-firmware -y
-apt-get remove xterm --purge -y 
-apt install kubeadm kubectl kubelet docker.io ansible teamviewer dingtalk touchpad-indicator deepin-screenshot wps-office thunderbird thunderbird-locale-zh-hans -y
 EOF
 chmod 755 $HOME/chroot/tmp/set-livecd.sh
 chroot $CHROOT "/tmp/set-livecd.sh" 
-rm -rvf $CHROOT/var/cache/apt/archives/ 
+}
 
+
+function do_second_stage()
+{
+
+cat <<'EOF' >>${CHROOT}/tmp/set-livecd.sh
+export DEBIAN_FRONTEND=noninteractive
+apt update && apt -f install -y
+apt install live-config linux-image-4.19.0-2-amd64 linux-tools linux-headers-4.19.0-2-all linux-source-4.19 firmware-misc-nonfree firmware-linux-free firmware-iwlwifi bluez-firmware network-manager lightdm fcitx fcitx-frontend-qt5 fcitx-frontend-gtk3 sogoupinyin xserver-xorg-core xserver-xorg-input-all xserver-xorg-video-all xserver-xorg-input-wacom xinit -y
+apt install --no-install-recommends dde deepin-installer deepin-terminal google-chrome-stable -y
+apt-get remove xterm --purge -y 
+#apt install kubeadm kubectl kubelet docker.io ansible teamviewer dingtalk touchpad-indicator deepin-screenshot wps-office thunderbird thunderbird-locale-zh-hans -y
+EOF
+chmod 755 $HOME/chroot/tmp/set-livecd.sh
+chroot $CHROOT "/tmp/set-livecd.sh" 
+}
+
+function do_umount()
+{
 umount  $CHROOT/dev
 umount  $CHROOT/proc
 umount  $CHROOT/sys
+}
+
+function do_clean()
+{
+rm -rvf $CHROOT/var/cache/apt/archives/ 
+}
+
+function do_mk_file()
+{
 
 mksquashfs $HOME/chroot $HOME/LIVE_BOOT/image/live/filesystem.squashfs -comp xz 
 cp $HOME/chroot/boot/vmlinuz-* $HOME/LIVE_BOOT/image/vmlinuz
@@ -68,18 +91,23 @@ set default="0"
 set timeout=30
 
 menuentry "Desktop Live" {
-    linux /vmlinuz boot=live quiet
+    linux /vmlinuz boot=live union=overlay quiet
     initrd /initrd
 }
 EOF
 
 touch $HOME/LIVE_BOOT/image/DEBIAN_CUSTOM
 grub-mkstandalone --format=x86_64-efi --output=$HOME/LIVE_BOOT/scratch/bootx64.efi --locales="" --fonts="" "boot/grub/grub.cfg=$HOME/LIVE_BOOT/scratch/grub.cfg"
-cd $HOME/LIVE_BOOT/scratch                            && \
-       	dd if=/dev/zero of=efiboot.img bs=1M count=10 && \
-	mkfs.vfat efiboot.img                         && \
-	mmd -i efiboot.img efi efi/boot               && \
-	mcopy -i efiboot.img ./bootx64.efi ::efi/boot/
+cd $HOME/LIVE_BOOT/scratch                      && \
+dd if=/dev/zero of=efiboot.img bs=1M count=10	&& \
+mkfs.vfat efiboot.img							&& \
+mmd -i efiboot.img efi efi/boot					&& \
+mcopy -i efiboot.img ./bootx64.efi ::efi/boot/
+
+}
+
+function do_mkiso()
+{
 
 xorriso -as mkisofs \
     -iso-level 3 \
@@ -91,3 +119,12 @@ xorriso -as mkisofs \
     -append_partition 2 0xef ${HOME}/LIVE_BOOT/scratch/efiboot.img \
     -graft-points "${HOME}/LIVE_BOOT/image" /EFI/efiboot.img=$HOME/LIVE_BOOT/scratch/efiboot.img \
     -output "${HOME}/LIVE_BOOT/deepin-desktop-core-20181210.iso"
+}
+
+#do_prep
+do_first_stage
+#do_second_stage
+do_umount
+#do_clean
+do_mk_file
+do_mkiso
