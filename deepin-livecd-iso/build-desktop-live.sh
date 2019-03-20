@@ -2,7 +2,6 @@
  
 set -x
 
-export REPO_LOCAL=file:///home/shenlan/workspaces/lion-repo-core/
 export REPO_NET=http://mirrors.tuna.tsinghua.edu.cn/deepin/
 export DIST=lion
 export CHROOT=$HOME/chroot
@@ -12,7 +11,7 @@ function do_prep()
 {
     rm -rvf  $HOME/chroot/
     rm -rvf  $HOME/LIVE_BOOT/
-#    apt install debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin mtools -y
+    apt install debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin mtools -y
 }
 
 #apt-get download `cat mini-base.list`
@@ -58,10 +57,10 @@ cat <<'EOF' >${CHROOT}/tmp/set-livecd.sh
 export DEBIAN_FRONTEND=noninteractive
 apt update && apt -f install -y
 apt install live-config linux-image-deepin-amd64 linux-tools-4.15.0-30deepin linux-headers-4.15.0-30deepin linux-source-4.15.0 firmware-misc-nonfree firmware-linux-free firmware-iwlwifi bluez-firmware network-manager lightdm fcitx fcitx-frontend-qt5 fcitx-frontend-gtk3 sogoupinyin xserver-xorg-core xserver-xorg-input-all xserver-xorg-video-all xserver-xorg-input-wacom xinit -y
-apt install --no-install-recommends dde deepin-installer deepin-terminal google-chrome-stable -y
+apt install --no-install-recommends dde deepin-installer deepin-terminal google-chrome-stable deepin-appstore -y
 apt-get remove linux-image-amd64 linux-image-4.9.0-8-amd64  xterm --purge -y 
 update-initramfs -u
-#apt install kubeadm kubectl kubelet docker.io ansible teamviewer dingtalk touchpad-indicator deepin-screenshot wps-office thunderbird thunderbird-locale-zh-hans -y
+#apt install kubeadm kubectl kubelet docker.io ansible teamviewer dingtalk foxitreader touchpad-indicator deepin-screenshot shadowsocks-qt5 wps-office thunderbird thunderbird-locale-zh-hans electronic-wechat -y
 EOF
 chmod 755 $HOME/chroot/tmp/set-livecd.sh
 chroot $CHROOT "/tmp/set-livecd.sh" 
