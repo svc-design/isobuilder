@@ -96,11 +96,7 @@ insmod all_video
 set default="0"
 set timeout=30
 
-menuentry "Desktop Live" {
-    linux /vmlinuz boot=live quiet
-    initrd /initrd
-}
-menuentry "Desktop Live overlay" {
+menuentry "DDE Desktop Live" {
     linux /vmlinuz boot=live union=overlay quiet
     initrd /initrd
 }
