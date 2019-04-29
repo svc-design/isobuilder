@@ -1,5 +1,9 @@
 
-export disk=$1
+export iso=$1
+export disk=$2
+
+mkdir -pv $HOME/LIVE_BOOT/
+mount $iso $HOME/LIVE_BOOT/
 
 dd if=/dev/null of=$disk bs=4M count=10
 
@@ -31,8 +35,25 @@ grub-install \
 
 mkdir -p /mnt/usb/{boot/grub,live}
 
-cp -r $HOME/LIVE_BOOT/image/* /mnt/usb/
-cp $HOME/LIVE_BOOT/scratch/grub.cfg /mnt/usb/boot/grub/grub.cfg
+cp $HOME/LIVE_BOOT/initrd /mnt/usb/
+cp $HOME/LIVE_BOOT/vmlinuz /mnt/usb/
+cp $HOME/LIVE_BOOT/live/filesystem.squashfs /mnt/usb/live/
+cp $HOME/LIVE_BOOT/DEBIAN_CUSTOM /mnt/usb/
+
+cat <<'EOF' >/mnt/usb/boot/grub/grub.cfg
+
+search --set=root --file /DEBIAN_CUSTOM
+
+insmod all_video
+
+set default="0"
+set timeout=30
+
+menuentry "DDE Desktop Live" {
+    linux /vmlinuz boot=live union=overlay quiet
+    initrd /initrd
+}
+EOF
 
 sync
 
